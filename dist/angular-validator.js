@@ -50,19 +50,23 @@ angular.module('angularValidator')
 
 			// loop validation response from server to set invalid fields
 			if(angularValidator.validation && Object.keys(angularValidator.validation).length > 0) {
-				angular.forEach(Object.keys(angularValidator.validation), function (key) {
-					var field = angularValidator.validation[key];
+				//console.log('angularValidator.DOMForm', angularValidator.DOMForm);
+				//console.log('angularValidator.form', angularValidator.form);
+				//console.log('angularValidator.validation', angularValidator.validation);
+				angular.forEach(Object.keys(angularValidator.validation.details), function (key) {
+					var field = angularValidator.validation.details[key];
+					var fieldName = field.field;
 					// only apply to fields actually within the form scope
-					//console.log(angularValidator.form[key]);
-					if(angularValidator.form[key]) {
+					//console.log('angularValidator.form[fieldName]',angularValidator.form[fieldName]);
+					if(angularValidator.form[fieldName]) {
 
 						// set validity to false
-						angularValidator.form[key].$setValidity(key, false);
+						angularValidator.form[fieldName].$setValidity(fieldName, false);
 						// set form message
 						//console.log(field);
 
 						if(field.description) {
-							angular.element(angularValidator.DOMForm[angularValidator.form][key]).attr('invalid-message', "'" + field.description + "'");
+							angular.element(angularValidator.DOMForm[angularValidator.form.$name][fieldName]).attr('invalid-message', "'" + field.description + "'");
 						}
 					}
 					// handle validation that did not match field on form
