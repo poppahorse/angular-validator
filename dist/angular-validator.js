@@ -78,11 +78,18 @@ angular.module('angularValidator')
 
 			// handle errors not field specific
 
-			if(validationNoField.length) {
+			//console.log('validationNoField',validationNoField, angularValidator.validation.details, angularValidator.validation)
+			if(validationNoField.length || (angularValidator.validation.status == 'ERROR' && angularValidator.validation.details.length == 0)) {
 				var error_desc = '';
+				// show detail specific errors
 				for (i = 0; i < validationNoField.length; i++) {
 					error_desc += validationNoField[i].description+'.\n\n';
 				}
+				// show generic errors
+				if(angularValidator.validation.description) {
+					error_desc += angularValidator.validation.description + '.\n\n';
+				}
+
 				//alertGuy
 				alertGuy.alert({
 					title: 'There were errors in the data you sent',
