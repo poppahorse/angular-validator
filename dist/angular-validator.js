@@ -49,7 +49,7 @@ angular.module('angularValidator')
 			//console.log(angularValidator.validation);
 
 			// loop validation response from server to set invalid fields
-			if(angularValidator.validation && Object.keys(angularValidator.validation).length > 0) {
+			if(angularValidator.validation && Object.keys(angularValidator.validation).length > 0 && angularValidator.validation.details) {
 				//console.log('angularValidator.DOMForm', angularValidator.DOMForm);
 				//console.log('angularValidator.form', angularValidator.form);
 				//console.log('angularValidator.validation', angularValidator.validation);
