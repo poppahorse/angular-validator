@@ -91,7 +91,7 @@ angular.module('angularValidator')
 				}
 
 				//alertGuy
-				if(!settings.disableValidationDialog) {
+				if(settings && !settings.disableValidationDialog) {
 					alertGuy.alert({
 						title: 'There were errors in the data you sent',
 						text: error_desc
