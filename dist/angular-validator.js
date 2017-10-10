@@ -404,11 +404,13 @@ angular.module('angularValidator').directive('angularValidator', ['$injector', '
 					// instead of on the parent element. Note that Bootstrap requires the .has-error class to be on the parent element
 					angular.element(element).removeClass('has-error');
 					angular.element(element.parentNode).removeClass('has-error');
+					$(element).parents('.form-element').removeClass('has-error');
 
 					// Only add/remove validation classes if the field is $dirty or the form has been submitted
 					if (formField.$dirty || angularValidator.scopeForm[attrs.name].submitted) {
 						if (formField.$invalid) {
 							angular.element(element.parentNode).addClass('has-error');
+							$(element).parents('.form-element').addClass('has-error');
 
 							// This is extra for users wishing to implement the .has-error class on the field itself
 							// instead of on the parent element. Note that Bootstrap requires the .has-error class to be on the parent element
