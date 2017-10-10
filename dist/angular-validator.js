@@ -139,7 +139,7 @@ angular.module('angularValidator')
 			}
 
 			// Only add validation messages if the form field is $dirty or the form has been submitted
-			if (scopeElementModel.$dirty || angularValidator.scopeForm[formname].submitted) {
+			if ((scopeElementModel.$dirty || angularValidator.scopeForm[formname].submitted) && !('no-validation-message' in element.attributes)) {
 
 				if (scopeElementModel.$error.required) {
 					// If there is a custom required message display it
