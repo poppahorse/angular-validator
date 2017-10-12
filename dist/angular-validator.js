@@ -11,192 +11,211 @@ angular.module('angularValidator', []);
  * see if we can force validation with validity
  * */
 
-angular.module('angularValidator')
-	.service('angularValidator', ['$compile', 'alertGuy', function($compile, alertGuy) {
-		var scope;
-		var scopeForm = {};
-		var form = {};
-		var validation = {};
-		var DOMForm = {};
+function AngularValidator(opts, $compile, alertGuy) {
+	var scope;
+	var scopeForm = {};
+	var form = {};
+	var validation = {};
+	var DOMForm = {};
 
-		var angularValidator = {
-			scope: scope,
-			scopeForm: scopeForm,
-			DOMForm: DOMForm,
-			form: form,
-			setForm: setForm,
-			validation: validation,
-			setValidation: setValidation,
-			parseValidation: parseValidation,
-			updateValidationMessage: updateValidationMessage
-		};
+	var options = opts;
 
-		return angularValidator;
+	var angularValidator = {
+		scope: scope,
+		scopeForm: scopeForm,
+		DOMForm: DOMForm,
+		form: form,
+		setForm: setForm,
+		validation: validation,
+		setValidation: setValidation,
+		parseValidation: parseValidation,
+		updateValidationMessage: updateValidationMessage
+	};
 
-		/////
+	return angularValidator;
 
-		function parseValidation(settings) {
+	/////
 
-			var validationNoField = [];
+	function parseValidation(settings) {
 
-			//set whole form to valid again
-			angular.forEach(angularValidator.form, function(formElement) {
-				if (formElement && formElement.$name && angularValidator.form[formElement.$name]) {
-					angularValidator.form[formElement.$name].$setValidity(formElement.$name, true);
-					angularValidator.form[formElement.$name].$render();
+		var validationNoField = [];
+
+		//set whole form to valid again
+		angular.forEach(angularValidator.form, function(formElement) {
+			if (formElement && formElement.$name && angularValidator.form[formElement.$name]) {
+				angularValidator.form[formElement.$name].$setValidity(formElement.$name, true);
+				angularValidator.form[formElement.$name].$render();
+			}
+		});
+		//console.log(angularValidator.validation);
+
+		// loop validation response from server to set invalid fields
+		if(angularValidator.validation && Object.keys(angularValidator.validation).length > 0 && angularValidator.validation.details) {
+			//console.log('angularValidator.DOMForm', angularValidator.DOMForm);
+			//console.log('angularValidator.form', angularValidator.form);
+			//console.log('angularValidator.validation', angularValidator.validation);
+			angular.forEach(Object.keys(angularValidator.validation.details), function (key) {
+				var field = angularValidator.validation.details[key];
+				var fieldName = field.field;
+				// only apply to fields actually within the form scope
+				//console.log('angularValidator.form[fieldName]',angularValidator.form[fieldName]);
+				if(angularValidator.form[fieldName]) {
+
+					// set validity to false
+					angularValidator.form[fieldName].$setValidity(fieldName, false);
+					// set form message
+					//console.log(field);
+
+					if(field.description) {
+						angular.element(angularValidator.DOMForm[angularValidator.form.$name][fieldName]).attr('invalid-message', "'" + field.description + "'");
+					}
+				}
+				// handle validation that did not match field on form
+				else {
+					validationNoField.push(field);
 				}
 			});
-			//console.log(angularValidator.validation);
+		}
 
-			// loop validation response from server to set invalid fields
-			if(angularValidator.validation && Object.keys(angularValidator.validation).length > 0 && angularValidator.validation.details) {
-				//console.log('angularValidator.DOMForm', angularValidator.DOMForm);
-				//console.log('angularValidator.form', angularValidator.form);
-				//console.log('angularValidator.validation', angularValidator.validation);
-				angular.forEach(Object.keys(angularValidator.validation.details), function (key) {
-					var field = angularValidator.validation.details[key];
-					var fieldName = field.field;
-					// only apply to fields actually within the form scope
-					//console.log('angularValidator.form[fieldName]',angularValidator.form[fieldName]);
-					if(angularValidator.form[fieldName]) {
+		// handle errors not field specific
 
-						// set validity to false
-						angularValidator.form[fieldName].$setValidity(fieldName, false);
-						// set form message
-						//console.log(field);
-
-						if(field.description) {
-							angular.element(angularValidator.DOMForm[angularValidator.form.$name][fieldName]).attr('invalid-message', "'" + field.description + "'");
-						}
-					}
-					// handle validation that did not match field on form
-					else {
-						validationNoField.push(field);
-					}
-				});
+		//console.log('validationNoField',validationNoField, angularValidator.validation.details, angularValidator.validation)
+		if(validationNoField.length || (angularValidator.validation.status == 'ERROR' && angularValidator.validation.details.length == 0)) {
+			var error_desc = '';
+			// show detail specific errors
+			for (i = 0; i < validationNoField.length; i++) {
+				error_desc += validationNoField[i].description+'.\n\n';
+			}
+			// show generic errors
+			if(angularValidator.validation.description) {
+				error_desc += angularValidator.validation.description + '.\n\n';
 			}
 
-			// handle errors not field specific
-
-			//console.log('validationNoField',validationNoField, angularValidator.validation.details, angularValidator.validation)
-			if(validationNoField.length || (angularValidator.validation.status == 'ERROR' && angularValidator.validation.details.length == 0)) {
-				var error_desc = '';
-				// show detail specific errors
-				for (i = 0; i < validationNoField.length; i++) {
-					error_desc += validationNoField[i].description+'.\n\n';
-				}
-				// show generic errors
-				if(angularValidator.validation.description) {
-					error_desc += angularValidator.validation.description + '.\n\n';
-				}
-
-				//alertGuy
-				if(settings && !settings.disableValidationDialog) {
+			//alertGuy
+			if(settings && !settings.disableValidationDialog) {
+				if (options.translateAlertDialog) {
+					alertGuy.localizedAlert({
+						title: options.errorAlertTitle,
+						text: error_desc
+					});
+				} else {
 					alertGuy.alert({
-						title: 'There were errors in the data you sent',
+						title: options.errorAlertTitle,
 						text: error_desc
 					});
 				}
 			}
 		}
+	}
 
-		function setValidation(validation) {
-			angularValidator.validation = validation;
+	function setValidation(validation) {
+		angularValidator.validation = validation;
+	}
+	function setForm(form) {
+		angularValidator.form = form;
+	}
+
+	//
+
+
+
+
+	// Adds and removes an error message as a sibling element of the form field
+	// depending on the validity of the form field and the submitted state of the form.
+	// Will use default message if a custom message is not given
+	function updateValidationMessage(element, formInvalidMessage, formname) {
+
+		// Make sure the element is a form field and not a button for example
+		// Only form elements should have names.
+		if (!(element.name in angularValidator.scopeForm[formname])) {
+			return;
 		}
-		function setForm(form) {
-			angularValidator.form = form;
+
+		var scopeElementModel = angularValidator.scopeForm[formname][element.name];
+
+		// Remove all validation messages
+		var validationMessageElement = isValidationMessagePresent(element);
+		if (validationMessageElement) {
+			validationMessageElement.remove();
 		}
 
-		//
+		// Only add validation messages if the form field is $dirty or the form has been submitted
+		if ((scopeElementModel.$dirty || angularValidator.scopeForm[formname].submitted) && !('no-validation-message' in element.attributes)) {
+
+			if (scopeElementModel.$error.required) {
+				// If there is a custom required message display it
+				if ("required-message" in element.attributes) {
+					angular.element(element).after($compile(generateErrorMessage(element.attributes['required-message'].value, scopeElementModel, angularValidator.scope))(angularValidator.scope));
+				}
+				// Display the default required message
+				else {
+					angular.element(element).after($compile(generateErrorMessage(options.defaultRequiredMessage(), scopeElementModel, angularValidator.scope))(angularValidator.scope));
+				}
+			} else if (!scopeElementModel.$valid) {
+				// If there is a custom validation message add it
+				if ("invalid-message" in element.attributes) {
+					//-//console.log('update',element.attributes['invalid-message'],scopeElementModel);
+					angular.element(element).after($compile(generateErrorMessage(element.attributes['invalid-message'].value, scopeElementModel, angularValidator.scope))(angularValidator.scope));
+				}
+				// Display error message provided by custom service
+				else if (formInvalidMessage) {
+					angular.element(element).after($compile(generateErrorMessage(formInvalidMessage.message(scopeElementModel, element, angularValidator.scope), scopeElementModel))(angularValidator.scope));
+				}
+				// Display the default error message
+				else {
+					angular.element(element).after($compile(generateErrorMessage(options.defaultInvalidMessage(), scopeElementModel, angularValidator.scope))(angularValidator.scope));
+				}
+			}
+		}
+	}
 
 
+	function generateErrorMessage(messageText, attrs, scope) {
+		var finalMsg = scope ? scope.$eval(messageText) : messageText;
+		//console.log('finalMsg',finalMsg,messageText,scope);
+
+		return '<validation class="control-label has-error validationMessage">'
+			+'<a class="btn btn-tiny btn-validation-error" ng-click="showValid.'+attrs.$name+' = !showValid.'+attrs.$name+'"></a>'
+			+'<div class="sub-tooltip mod-validation-error ng-hide" ng-show="showValid.'+attrs.$name+'" ng-click="showValid.'+attrs.$name+' = !showValid.'+attrs.$name+'">'
+			+'<p>' + finalMsg + '</p>'
+			+'</div>'
+			+'</validation>';
+	}
 
 
-		// Adds and removes an error message as a sibling element of the form field
-		// depending on the validity of the form field and the submitted state of the form.
-		// Will use default message if a custom message is not given
-		function updateValidationMessage(element, formInvalidMessage, formname) {
+	// Returns the validation message element or False
+	function isValidationMessagePresent(element) {
+		var elementSiblings = angular.element(element).parent().children();
+		for (var i = 0; i < elementSiblings.length; i++) {
+			if (angular.element(elementSiblings[i]).hasClass("validationMessage")) {
+				return angular.element(elementSiblings[i]);
+			}
+		}
+		return false;
+	}
 
-			var defaultRequiredMessage = function() {
+
+}
+
+angular.module('angularValidator')
+	.provider('angularValidator', function () {
+		var provider = this;
+		provider.opts = {
+			errorAlertTitle: 'There were errors in the data you sent',
+			translateAlertDialog: false,
+			defaultRequiredMessage: function() {
 				return "'<i class=\"fa fa-times\"></i> Required'"; // TODO - make this lang compatible
-			};
-			var defaultInvalidMessage = function() {
+			},
+			defaultInvalidMessage: function() {
 				return "'<i class=\"fa fa-times\"></i> Invalid'"; // TODO - make this lang compatible
-			};
-
-			// Make sure the element is a form field and not a button for example
-			// Only form elements should have names.
-			if (!(element.name in angularValidator.scopeForm[formname])) {
-				return;
 			}
+		};
 
-			var scopeElementModel = angularValidator.scopeForm[formname][element.name];
-
-			// Remove all validation messages
-			var validationMessageElement = isValidationMessagePresent(element);
-			if (validationMessageElement) {
-				validationMessageElement.remove();
-			}
-
-			// Only add validation messages if the form field is $dirty or the form has been submitted
-			if ((scopeElementModel.$dirty || angularValidator.scopeForm[formname].submitted) && !('no-validation-message' in element.attributes)) {
-
-				if (scopeElementModel.$error.required) {
-					// If there is a custom required message display it
-					if ("required-message" in element.attributes) {
-						angular.element(element).after($compile(generateErrorMessage(element.attributes['required-message'].value, scopeElementModel, angularValidator.scope))(angularValidator.scope));
-					}
-					// Display the default required message
-					else {
-						angular.element(element).after($compile(generateErrorMessage(defaultRequiredMessage(), scopeElementModel, angularValidator.scope))(angularValidator.scope));
-					}
-				} else if (!scopeElementModel.$valid) {
-					// If there is a custom validation message add it
-					if ("invalid-message" in element.attributes) {
-						//-//console.log('update',element.attributes['invalid-message'],scopeElementModel);
-						angular.element(element).after($compile(generateErrorMessage(element.attributes['invalid-message'].value, scopeElementModel, angularValidator.scope))(angularValidator.scope));
-					}
-					// Display error message provided by custom service
-					else if (formInvalidMessage) {
-						angular.element(element).after($compile(generateErrorMessage(formInvalidMessage.message(scopeElementModel, element, angularValidator.scope), scopeElementModel))(angularValidator.scope));
-					}
-					// Display the default error message
-					else {
-						angular.element(element).after($compile(generateErrorMessage(defaultInvalidMessage(), scopeElementModel, angularValidator.scope))(angularValidator.scope));
-					}
-				}
-			}
-		}
-
-
-		function generateErrorMessage(messageText, attrs, scope) {
-			var finalMsg = scope ? scope.$eval(messageText) : messageText;
-			//console.log('finalMsg',finalMsg,messageText,scope);
-
-			return '<validation class="control-label has-error validationMessage">'
-				+'<a class="btn btn-tiny btn-validation-error" ng-click="showValid.'+attrs.$name+' = !showValid.'+attrs.$name+'"></a>'
-				+'<div class="sub-tooltip mod-validation-error ng-hide" ng-show="showValid.'+attrs.$name+'" ng-click="showValid.'+attrs.$name+' = !showValid.'+attrs.$name+'">'
-				+'<p>' + finalMsg + '</p>'
-				+'</div>'
-				+'</validation>';
-		}
-
-
-		// Returns the validation message element or False
-		function isValidationMessagePresent(element) {
-			var elementSiblings = angular.element(element).parent().children();
-			for (var i = 0; i < elementSiblings.length; i++) {
-				if (angular.element(elementSiblings[i]).hasClass("validationMessage")) {
-					return angular.element(elementSiblings[i]);
-				}
-			}
-			return false;
-		}
-
-
-	}]);
-
-angular.module('angularValidator').directive('angularValidator', ['$injector', '$parse', '$compile', 'angularValidator',
+		provider.$get = ['$compile', 'alertGuy', function ($compile, alertGuy) {
+			return new AngularValidator(provider.opts, $compile, alertGuy);
+		}];
+	})
+	.directive('angularValidator', ['$injector', '$parse', '$compile', 'angularValidator',
 	function($injector, $parse, $compile, angularValidator) {
 		return {
 			restrict: 'A',
